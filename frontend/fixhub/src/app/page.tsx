@@ -1,6 +1,6 @@
 "use client";
 
-import { getHealth } from "lib/api";
+import { getHealth } from "../lib/api";
 import { useEffect, useState } from "react";
 
 export default function Home() {
