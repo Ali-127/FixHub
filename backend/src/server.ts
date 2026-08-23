@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import authRoutes from './routes/auth.routes'
 
 dotenv.config();
 
@@ -14,7 +15,9 @@ app.use(
   }),
 );
 
+// Reading req.body and form data
 app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Test route
 app.get("/", (req, res) => {
@@ -27,6 +30,8 @@ app.get("/api/health", (req, res) => {
     message: "FixHub api is running.",
   });
 });
+
+app.use('/api/auth', authRoutes)
 
 // Start the server
 const PORT = process.env.PORT || 5000;
