@@ -13,6 +13,16 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
         message: "Email and password are required",
       });
 
+    const existing_user = await prisma.user.findUnique({
+      where: { email },
+    });
+    if (existing_user)
+      return res
+        .status(400)
+        .json({
+          message: "User with this email already exists. Use another email",
+        });
+
     if (password !== passwordConfirm)
       return res.status(400).json({
         message: "Password and password confirm doesn't match",
