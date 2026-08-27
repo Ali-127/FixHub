@@ -45,7 +45,7 @@ export default function Login() {
       if (!res.ok) throw new Error(data.message || "Something went wrong");
 
       setSuccess(true);
-      setToken(data.data.accessToken);
+      // setToken(data.data.accessToken);
     } catch (error) {
       if (error instanceof Error) setError(error.message);
       else setError("Something went wrong.");

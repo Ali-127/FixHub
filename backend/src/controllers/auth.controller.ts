@@ -2,31 +2,45 @@ import { NextFunction, Request, Response } from "express";
 import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import prisma from "../lib/prisma";
+import { z } from "zod";
+
+const signupSchema = z
+  .object({
+    name: z.string().min(2),
+    email: z.email(),
+    password: z.string().min(6),
+    passwordConfirm: z.string(),
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: "Passwords don't match",
+    path: ["passwordConfirm"],
+  });
 
 export async function signup(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, email, password, passwordConfirm } = req.body;
+    const { name, email, password, passwordConfirm } = signupSchema.parse(
+      req.body,
+    );
 
-    // Validate data
-    if (!email || !password)
-      return res.status(400).json({
-        message: "Email and password are required",
-      });
+    // // Validate data
+    // if (!email || !password)
+    //   return res.status(400).json({
+    //     message: "Email and password are required",
+    //   });
 
     const existing_user = await prisma.user.findUnique({
       where: { email },
     });
-    if (existing_user)
-      return res
-        .status(400)
-        .json({
-          message: "User with this email already exists. Use another email",
-        });
 
-    if (password !== passwordConfirm)
+    if (existing_user)
       return res.status(400).json({
-        message: "Password and password confirm doesn't match",
+        message: "User with this email already exists. Use another email",
       });
+
+    // if (password !== passwordConfirm)
+    //   return res.status(400).json({
+    //     message: "Password and password confirm doesn't match",
+    //   });
 
     // Hash the password
     const saltRounds = 10;
@@ -39,20 +53,20 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
         name,
         passwordHash,
       },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
     });
-
-    // Remove password from response
-    const { passwordHash: _, ...userWithoutPassword } = newUser;
 
     return res.status(201).json({
       status: "ok",
-      data: userWithoutPassword,
+      data: newUser,
     });
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Something went wrong",
-    });
+    console.error("Sign up error: ", error);
+    next(error);
   }
 }
 
@@ -98,6 +112,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       },
     });
   } catch (error: any) {
+    console.log("Login error: ", error);
     return res.status(500).json({ message: error.message });
   }
 }
@@ -108,7 +123,13 @@ export async function getAllUsers(
   next: NextFunction,
 ) {
   try {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
 
     return res.status(200).json({
       status: "ok",
