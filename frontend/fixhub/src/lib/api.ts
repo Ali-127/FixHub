@@ -40,8 +40,12 @@ export type ApiErrorResponse = {
   errors?: Record<string, string[]>;
 };
 
+const fetchOptions = {
+  credentials: "include" as const,
+};
+
 export async function getHealth(): Promise<HealthResponse> {
-  const res = await fetch(`${API_URL}/api/health`);
+  const res = await fetch(`${API_URL}/api/health`, fetchOptions);
 
   if (!res.ok) {
     throw new Error("Failed to fetch health");
@@ -54,6 +58,7 @@ export async function Signup(
   credentials: SignupRequest,
 ): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/api/auth/signup`, {
+    ...fetchOptions,
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -80,6 +85,7 @@ export async function Signup(
 
 export async function Login(credentials: LoginRequest): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/api/auth/login`, {
+    ...fetchOptions,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(credentials),

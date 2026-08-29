@@ -5,6 +5,7 @@ import prisma from "../lib/prisma";
 import { formatZodErrors, ApiResponse, ApiError } from "../lib/errors";
 import { loginSchema, signupSchema } from "../lib/validation";
 
+
 export async function signup(
   req: Request,
   res: Response,
@@ -148,6 +149,21 @@ export async function login(
       process.env.JWT_REFRESH_SECRET as string,
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN } as SignOptions,
     );
+
+    // add tokens to cookies
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: true, // protect csrf attack
+      maxAge: 15 * 60 * 1000 // 15 min -----FIX THIS AND USE ENV VARIABLE INSTEAD
+    })
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: true, // protect csrf attack
+      maxAge: 7 * 24 * 15 * 60 * 1000 // 7 days
+    })
 
     const { passwordHash: _, ...userWithoutPassword } = user;
 

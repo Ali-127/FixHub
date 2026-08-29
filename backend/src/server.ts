@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -13,12 +14,15 @@ const app = express();
 app.use(
   cors({
     origin: "http://localhost:3000",
+    credentials: true // allow cookies
   }),
 );
 
 // Reading req.body and form data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
+app.use(cookieParser())
 
 // Test route
 app.get("/", (req, res) => {
