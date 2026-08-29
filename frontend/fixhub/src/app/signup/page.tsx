@@ -13,6 +13,7 @@ const initialFormState = {
 export default function SignUp() {
   const [formData, setFormData] = useState<SignupRequest>(initialFormState);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [success, setSuccess] = useState<boolean>(false);
 
@@ -21,11 +22,17 @@ export default function SignUp() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // clear errors on type
+    setFieldErrors({
+      ...fieldErrors,
+      [e.target.name]: [],
+    });
   }
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     setIsLoading(true);
     setSuccess(false);
 
@@ -60,6 +67,11 @@ export default function SignUp() {
             value={formData.name}
             required
           />
+          {fieldErrors.name && (
+            <p className="text-red-500 text-sm">
+              {fieldErrors.name.join(", ")}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between">
@@ -72,6 +84,11 @@ export default function SignUp() {
             value={formData.email}
             required
           />
+          {fieldErrors.email && (
+            <p className="text-red-500 text-sm">
+              {fieldErrors.email.join(", ")}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between">
@@ -84,6 +101,11 @@ export default function SignUp() {
             value={formData.password}
             required
           />
+          {fieldErrors.password && (
+            <p className="text-red-500 text-sm">
+              {fieldErrors.password.join(", ")}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between ">
@@ -91,11 +113,16 @@ export default function SignUp() {
           <input
             className="bg-amber-50 text-black"
             type="password"
-            name="confirmPassword"
+            name="passwordConfirm"
             onChange={handleChange}
             value={formData.passwordConfirm}
             required
           />
+          {fieldErrors.passwordConfirm && (
+            <p className="text-red-500 text-sm">
+              {fieldErrors.passwordConfirm.join(", ")}
+            </p>
+          )}
         </div>
 
         {error && <p className="text-red-500">{error}</p>}

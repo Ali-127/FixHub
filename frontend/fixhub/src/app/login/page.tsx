@@ -7,6 +7,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   // JWT Tokens
   const [accessToken, setAccessToken] = useState("");
@@ -22,11 +23,17 @@ export default function Login() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // clear error on type
+    setFieldErrors({
+      ...fieldErrors,
+      [e.target.name]: [],
+    });
   }
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     setSuccess(false);
     setIsLoading(true);
 
@@ -64,6 +71,11 @@ export default function Login() {
             value={formData.email}
             required
           />
+          {fieldErrors.email && (
+            <p className="text-red-500 text-sm">
+              {fieldErrors.email.join(", ")}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between">
@@ -76,6 +88,11 @@ export default function Login() {
             value={formData.password}
             required
           />
+          {fieldErrors.password && (
+            <p className="text-red-500 text-sm">
+              {fieldErrors.password.join(", ")}
+            </p>
+          )}
         </div>
         {error && <p className="text-red-500">{error}</p>}
         {success && <p className="text-green-500">Logged in successfuly</p>}

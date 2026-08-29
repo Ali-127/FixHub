@@ -34,6 +34,12 @@ export type AuthResponse = {
   };
 };
 
+export type ApiErrorResponse = {
+  status: "error";
+  message: string;
+  errors?: Record<string, string[]>;
+};
+
 export async function getHealth(): Promise<HealthResponse> {
   const res = await fetch(`${API_URL}/api/health`);
 
@@ -44,7 +50,9 @@ export async function getHealth(): Promise<HealthResponse> {
   return res.json();
 }
 
-export async function Signup(credentials: SignupRequest): Promise<AuthResponse> {
+export async function Signup(
+  credentials: SignupRequest,
+): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/api/auth/signup`, {
     method: "POST",
     headers: {
@@ -54,8 +62,17 @@ export async function Signup(credentials: SignupRequest): Promise<AuthResponse> 
   });
 
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.message || "Signup failed");
+    const error: ApiErrorResponse = await res.json();
+    let errorMessage = error.message || "Signup failed";
+    if (error.errors) {
+      const fieldErrors = Object.entries(error.errors)
+        .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+        .join("; ");
+      errorMessage = fieldErrors || errorMessage;
+
+      console.log(fieldErrors);
+    }
+    throw new Error(errorMessage);
   }
 
   return res.json();
@@ -69,8 +86,17 @@ export async function Login(credentials: LoginRequest): Promise<AuthResponse> {
   });
 
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.message || "Login failed");
+    const error: ApiErrorResponse = await res.json();
+    let errorMessage = error.message || "Login failed";
+    if (error.errors) {
+      const fieldErrors = Object.entries(error.errors)
+        .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+        .join("; ");
+      errorMessage = fieldErrors || errorMessage;
+
+      console.log(fieldErrors);
+    }
+    throw new Error(errorMessage);
   }
 
   return res.json();

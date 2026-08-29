@@ -2,45 +2,48 @@ import { NextFunction, Request, Response } from "express";
 import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import prisma from "../lib/prisma";
-import { z } from "zod";
+import { formatZodErrors, ApiResponse, ApiError } from "../lib/errors";
+import { loginSchema, signupSchema } from "../lib/validation";
 
-const signupSchema = z
-  .object({
-    name: z.string().min(2),
-    email: z.email(),
-    password: z.string().min(6),
-    passwordConfirm: z.string(),
-  })
-  .refine((data) => data.password === data.passwordConfirm, {
-    message: "Passwords don't match",
-    path: ["passwordConfirm"],
-  });
-
-export async function signup(req: Request, res: Response, next: NextFunction) {
+export async function signup(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
-    const { name, email, password, passwordConfirm } = signupSchema.parse(
-      req.body,
-    );
+    const validationResult = signupSchema.safeParse(req.body);
 
-    // // Validate data
-    // if (!email || !password)
-    //   return res.status(400).json({
-    //     message: "Email and password are required",
-    //   });
+    if (!validationResult.success) {
+      const errors = formatZodErrors(validationResult.error);
+      const response: ApiError = {
+        status: "error",
+        message: "Validation failed",
+        errors,
+      };
 
+      res.status(400).json(response);
+      return;
+    }
+
+    const { name, email, password } = validationResult.data;
+
+    // Check if user exists
     const existing_user = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existing_user)
-      return res.status(400).json({
-        message: "User with this email already exists. Use another email",
-      });
+    if (existing_user) {
+      const response: ApiError = {
+        status: "error",
+        message: "User with this email already exists",
+        errors: {
+          email: ["Email is already in use"],
+        },
+      };
 
-    // if (password !== passwordConfirm)
-    //   return res.status(400).json({
-    //     message: "Password and password confirm doesn't match",
-    //   });
+      res.status(400).json(response);
+      return;
+    }
 
     // Hash the password
     const saltRounds = 10;
@@ -62,28 +65,44 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
 
     // Login new user
 
-    return res.status(201).json({
+    res.status(201).json({
       status: "ok",
       data: newUser,
     });
+    return;
   } catch (error) {
-    console.error("Sign up error: ", error);
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        status: "error",
-        data: {
-          errors: error.issues,
-        },
-      });
-    }
+    console.error("Signup error: ", error);
+    const response: ApiError = {
+      status: "error",
+      message: "Internal error",
+    };
 
-    next(error);
+    res.status(500).json(response);
+    return;
   }
 }
 
-export async function login(req: Request, res: Response, next: NextFunction) {
+export async function login(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const validationResult = loginSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      const errors = formatZodErrors(validationResult.error);
+      const response: ApiError = {
+        status: "error",
+        message: "Validation failed",
+        errors,
+      };
+
+      res.status(400).json(response);
+      return;
+    }
+
+    const { email, password } = validationResult.data;
 
     // check if user exists
     const user = await prisma.user.findUnique({
@@ -91,13 +110,31 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid email" });
+      const response: ApiError = {
+        status: "error",
+        message: "Invalid credentials",
+        errors: {
+          email: ["User not found"],
+        },
+      };
+
+      res.status(401).json(response);
+      return;
     }
 
     // Compare password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid)
-      return res.status(401).json({ message: "Invalid password" });
+    if (!isPasswordValid) {
+      const response: ApiError = {
+        status: "error",
+        message: "Invalid credentials",
+        errors: {
+          password: ["Password is incorrect"],
+        },
+      };
+      res.status(401).json(response);
+      return;
+    }
 
     // Create tokens
     const accessToken = jwt.sign(
@@ -114,7 +151,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     const { passwordHash: _, ...userWithoutPassword } = user;
 
-    return res.status(200).json({
+    res.status(200).json({
       status: "ok",
       data: {
         user: userWithoutPassword,
@@ -122,9 +159,16 @@ export async function login(req: Request, res: Response, next: NextFunction) {
         refreshToken,
       },
     });
+    return;
   } catch (error: any) {
     console.log("Login error: ", error);
-    return res.status(500).json({ message: error.message });
+    const response: ApiError = {
+      status: "error",
+      message: "Internal server error",
+    };
+
+    res.status(500).json(response);
+    return;
   }
 }
 
