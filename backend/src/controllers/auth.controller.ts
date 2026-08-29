@@ -60,12 +60,23 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
       },
     });
 
+    // Login new user
+
     return res.status(201).json({
       status: "ok",
       data: newUser,
     });
   } catch (error) {
     console.error("Sign up error: ", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        status: "error",
+        data: {
+          errors: error.issues,
+        },
+      });
+    }
+
     next(error);
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Login as LoginAPI, LoginRequest } from "@/lib/api";
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -11,7 +12,7 @@ export default function Login() {
   const [accessToken, setAccessToken] = useState("");
   const [refreshToken, setRefreshToken] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LoginRequest>({
     email: "",
     password: "",
   });
@@ -30,21 +31,14 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      console.log(formData);
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "Something went wrong");
+      const data = await LoginAPI(formData);
+      console.log(data);
 
       setSuccess(true);
+      setFormData({
+        email: "",
+        password: "",
+      });
       // setToken(data.data.accessToken);
     } catch (error) {
       if (error instanceof Error) setError(error.message);
@@ -67,6 +61,7 @@ export default function Login() {
             type="email"
             name="email"
             onChange={handleChange}
+            value={formData.email}
             required
           />
         </div>
@@ -78,6 +73,7 @@ export default function Login() {
             type="password"
             name="password"
             onChange={handleChange}
+            value={formData.password}
             required
           />
         </div>
@@ -89,7 +85,7 @@ export default function Login() {
           className="bg-green-200 text-black rounded-2xl"
           disabled={isLoading}
         >
-          Login
+          {isLoading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>

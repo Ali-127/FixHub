@@ -1,14 +1,17 @@
 "use client";
 
+import { Signup as signupAPI, SignupRequest } from "@/lib/api";
 import React, { useState } from "react";
 
+const initialFormState = {
+  name: "",
+  email: "",
+  password: "",
+  passwordConfirm: "",
+};
+
 export default function SignUp() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [formData, setFormData] = useState<SignupRequest>(initialFormState);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [success, setSuccess] = useState<boolean>(false);
@@ -24,34 +27,16 @@ export default function SignUp() {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    setSuccess(false)
+    setSuccess(false);
 
     try {
-      if (formData.password !== formData.confirmPassword)
-        throw new Error("Passwords do not match");
+      const data = await signupAPI(formData);
 
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          passwordConfirm: formData.confirmPassword,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Something went wrong");
-      }
-
-      setSuccess(true);
       console.log("User create", data);
+      setSuccess(true);
+      setFormData(initialFormState);
     } catch (error) {
+      console.log(error);
       if (error instanceof Error) setError(error.message);
       else setError("Something went wrong");
     } finally {
@@ -72,6 +57,7 @@ export default function SignUp() {
             type="text"
             name="name"
             onChange={handleChange}
+            value={formData.name}
             required
           />
         </div>
@@ -83,6 +69,7 @@ export default function SignUp() {
             type="email"
             name="email"
             onChange={handleChange}
+            value={formData.email}
             required
           />
         </div>
@@ -94,6 +81,7 @@ export default function SignUp() {
             type="password"
             name="password"
             onChange={handleChange}
+            value={formData.password}
             required
           />
         </div>
@@ -105,6 +93,7 @@ export default function SignUp() {
             type="password"
             name="confirmPassword"
             onChange={handleChange}
+            value={formData.passwordConfirm}
             required
           />
         </div>
