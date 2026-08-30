@@ -5,7 +5,6 @@ import prisma from "../lib/prisma";
 import { formatZodErrors, ApiResponse, ApiError } from "../lib/errors";
 import { loginSchema, signupSchema } from "../lib/validation";
 
-
 export async function signup(
   req: Request,
   res: Response,
@@ -154,16 +153,16 @@ export async function login(
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: true, // protect csrf attack
-      maxAge: 15 * 60 * 1000 // 15 min -----FIX THIS AND USE ENV VARIABLE INSTEAD
-    })
+      sameSite: "lax", // protect csrf attack
+      maxAge: 15 * 60 * 1000, // 15 min -----FIX THIS AND USE ENV VARIABLE INSTEAD
+    });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: true, // protect csrf attack
-      maxAge: 7 * 24 * 15 * 60 * 1000 // 7 days
-    })
+      sameSite: "lax",
+      maxAge: 24 * 15 * 60 * 1000, // 7 days
+    });
 
     const { passwordHash: _, ...userWithoutPassword } = user;
 
@@ -171,8 +170,6 @@ export async function login(
       status: "ok",
       data: {
         user: userWithoutPassword,
-        accessToken,
-        refreshToken,
       },
     });
     return;
@@ -186,6 +183,64 @@ export async function login(
     res.status(500).json(response);
     return;
   }
+}
+
+export async function refresh(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const token = req.cookies.refreshToken;
+
+    if (!token) {
+      res.status(401).json({
+        status: "error",
+        message: "No refresh token",
+      });
+      return;
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_REFRESH_SECRET as string,
+    ) as { userId: string };
+
+    const accessToken = jwt.sign(
+      { userId: decoded.userId },
+      process.env.JWT_ACCESS_SECRET as string,
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN } as SignOptions,
+    );
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: Number(process.env.JWT_ACCESS_EXPIRES_IN),
+    });
+
+    res.status(200).json({
+      status: "ok",
+      data: {
+        message: "Token refreshed",
+      },
+    });
+  } catch (error) {
+    res.status(401).json({
+      status: "error",
+      message: "Invalid or expired refresh token",
+    });
+  }
+}
+
+export async function logout(req: Request, res: Response): Promise<void> {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+
+  res.status(200).json({
+    status: "ok",
+    data: { message: "Logged out" },
+  });
 }
 
 export async function getAllUsers(
@@ -210,6 +265,37 @@ export async function getAllUsers(
     return res.status(500).json({
       status: "error",
       message: "Failed to get users",
+    });
+  }
+}
+
+export async function me(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { id: true, email: true, name: true },
+    });
+
+    if (!user) {
+      res.status(401).json({
+        status: "error",
+        message: "User not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      status: "ok",
+      data: { user },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error",
     });
   }
 }

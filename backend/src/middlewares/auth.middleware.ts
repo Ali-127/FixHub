@@ -24,7 +24,7 @@ export function verifyToken(req: Request, res: Response, next: NextFunction) {
     // Verify token
     const decoded = jwt.verify(
       token,
-      process.env.JWT_ACCESS_SERCRET as string,
+      process.env.JWT_ACCESS_SECRET as string,
     ) as { userId: string };
 
     req.userId = decoded.userId;

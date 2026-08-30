@@ -14,15 +14,15 @@ const app = express();
 app.use(
   cors({
     origin: "http://localhost:3000",
-    credentials: true // allow cookies
+    credentials: true, // allow cookies
   }),
 );
 
 // Reading req.body and form data
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
-app.use(cookieParser())
+app.use(cookieParser());
 
 // Test route
 app.get("/", (req, res) => {
@@ -36,6 +36,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
   console.error(error);
   res.status(error.status || 500).json({
@@ -43,9 +45,6 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
     message: error.message || "Internal server error",
   });
 });
-
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

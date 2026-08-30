@@ -107,3 +107,19 @@ export async function Login(credentials: LoginRequest): Promise<AuthResponse> {
 
   return res.json();
 }
+
+export async function getDashboard(): Promise<{
+  message: string;
+  userId: string;
+}> {
+  const res = await fetch(`${API_URL}/api/user/dashboard`, fetchOptions);
+
+  if (!res.ok) {
+    const error: ApiErrorResponse = await res.json();
+    throw new Error(error.message || "Failed to access dashbaord");
+  }
+
+  const data = await res.json()
+  return data.data;
+
+}
