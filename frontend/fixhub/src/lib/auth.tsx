@@ -1,9 +1,15 @@
 "use client";
 
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { User } from "./api";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { getMe, User } from "./api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export type AuthContextValue = {
   user: User | null;
@@ -21,36 +27,29 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-export function AuthProvider({children}: {children: ReactNode}) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   async function checkAuth() {
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
-        credentials: "include"
-      })
-      if(res.ok) {
-        const data = await res.json();
-        setUser(data.data.user)
-      } else {
-        setUser(null)
-      }
+      const data = await getMe();
+      setUser(data.data.user);
     } catch {
-      setUser(null)
-    }finally{
-      setIsLoading(false)
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   useEffect(() => {
     // eslint-disable-next-line
     checkAuth();
-  }, [])
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, refetch: checkAuth }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }

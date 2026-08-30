@@ -119,7 +119,24 @@ export async function getDashboard(): Promise<{
     throw new Error(error.message || "Failed to access dashbaord");
   }
 
-  const data = await res.json()
+  const data = await res.json();
   return data.data;
+}
 
+export async function getMe(): Promise<{
+  status: string;
+  data: { user: User };
+}> {
+  let res = await fetch(`${API_URL}/api/auth/me`, fetchOptions);
+
+  if (!res.ok) {
+    await fetch(`${API_URL}/api/auth/refresh`, {
+      ...fetchOptions,
+      method: "POST",
+    });
+    res = await await fetch(`${API_URL}/api/auth/me`, fetchOptions);
+  }
+
+  if (!res.ok) throw new Error("Not authenticated");
+  return res.json();
 }
