@@ -9,8 +9,6 @@ import {
 } from "react";
 import { getMe, User } from "./api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
 export type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
