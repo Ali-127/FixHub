@@ -8,7 +8,7 @@ from app.models.user import User
 from app.schemas.question import QuestionCreate, QuestionOut
 from app.dependencies import get_current_user
 
-router = APIRouter(prefix="/questions", tags=["questions"])
+router = APIRouter(prefix="/api/questions", tags=["questions"])
 
 @router.get("/", response_model=List[QuestionOut])
 def list_questions(db: Session = Depends(get_db)):

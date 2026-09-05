@@ -9,8 +9,8 @@ class UserCreate(BaseModel):
 # what we send back
 class UserOut(BaseModel):
   id: int
-  username: str
   email: EmailStr
+  name: str
 
   class Config:
     from_attributes = True
