@@ -25,6 +25,18 @@ export type User = {
   name: string;
 };
 
+export type Question = {
+  id: number;
+  title: string;
+  body: string;
+  owner_id: number;
+};
+
+export type QuestionCreate = {
+  title: string;
+  body: string;
+};
+
 export type AuthResponse = {
   status: string;
   data: {
@@ -45,7 +57,7 @@ const fetchOptions = {
 };
 
 export async function getHealth(): Promise<HealthResponse> {
-  const res = await fetch(`${API_URL}/api/health`, fetchOptions);
+  const res = await fetch(API_URL, fetchOptions);
 
   if (!res.ok) {
     throw new Error("Failed to fetch health");
@@ -138,5 +150,31 @@ export async function getMe(): Promise<{
   }
 
   if (!res.ok) throw new Error("Not authenticated");
+  return res.json();
+}
+
+// Questions
+export async function getQuestions(): Promise<Question[]> {
+  const res = await fetch(`${API_URL}/api/questions/`, fetchOptions);
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch questions");
+  }
+
+  return res.json();
+}
+
+export async function createQuestion(
+  question: QuestionCreate,
+): Promise<Question> {
+  const res = await fetch(`${API_URL}/api/questions/`, {
+    ...fetchOptions,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(question),
+  });
+
+  if (!res.ok) throw new Error("Failed to create question");
+
   return res.json();
 }
